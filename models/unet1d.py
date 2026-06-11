@@ -39,15 +39,19 @@ class UNet1D(nn.Module):
             nn.GELU(),
             nn.Linear(hidden_dim * 4, hidden_dim)
         )
-        self.down1 = ConvBlock(in_channels, hidden_dim, hidden_dim)
+
+        # Downsampling (Encoder)
+        self.down1 = ConvBlock(in_channels, hidden_dim, hidden_dim)           # 1 -> 64
         self.pool1 = nn.MaxPool1d(2)
         self.down2 = ConvBlock(hidden_dim, hidden_dim * 2, hidden_dim)
         self.pool2 = nn.MaxPool1d(2)
-        self.bottleneck = ConvBlock(hidden_dim * 2, hidden_dim * 2, hidden_dim)
-        self.up1 = nn.ConvTranspose1d(hidden_dim * 2, hidden_dim, kernel_size=2, stride=2)
-        self.up_conv1 = ConvBlock(hidden_dim * 2, hidden_dim, hidden_dim)
-        self.up2 = nn.ConvTranspose1d(hidden_dim, hidden_dim, kernel_size=2, stride=2)
-        self.up_conv2 = ConvBlock(hidden_dim + in_channels, hidden_dim, hidden_dim)
+        self.bottleneck = ConvBlock(hidden_dim * 2, hidden_dim * 4, hidden_dim)
+        self.up1 = nn.ConvTranspose1d(hidden_dim * 4, hidden_dim * 2, kernel_size=2, stride=2)
+        self.up_conv1 = ConvBlock(hidden_dim * 4, hidden_dim * 2, hidden_dim)
+        self.up2 = nn.ConvTranspose1d(hidden_dim * 2, hidden_dim, kernel_size=2, stride=2)
+        self.up_conv2 = ConvBlock(hidden_dim * 2, hidden_dim, hidden_dim)
+
+        # Final Output Layer
         self.final = nn.Conv1d(hidden_dim, in_channels, kernel_size=1)
 
     def forward(self, x, k):

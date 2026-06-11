@@ -28,12 +28,13 @@ class StandardSchedule():
 
 
 class Ellipsoid():
-    def __init__(self, num_steps, d, device="cpu"):
+    def __init__(self, num_steps, d, beta_start=1e-4, beta_end=0.02, device="cpu"):
         self.device = device
         self.num_steps = num_steps
         self.d = d
-        base_betas = torch.linspace(1e-4, 0.02, num_steps, device=device).unsqueeze(1)
-        spatial_modifier = torch.linspace(1.0, 2.0, d, device=device).unsqueeze(0)
+        base_betas = torch.linspace(beta_start, beta_end, num_steps, device=device).unsqueeze(1)
+        x = torch.linspace(-1.0, 1.0, d, device=device)
+        spatial_modifier = (1.0 + torch.sqrt(1.0 - x**2)).unsqueeze(0)
         self.betas = base_betas * spatial_modifier
         self.alphas = 1.0 - self.betas
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
@@ -42,7 +43,6 @@ class Ellipsoid():
 
     def sample(self, data):
         b = data.shape[0]
-        l = data.shape[2]
         epsilon = torch.randn_like(data)
         k = torch.randint(0, self.num_steps, size=(b,), device=self.device)
         sqrt_alpha_k = self.sqrt_alphas_cumprod[k]
