@@ -14,23 +14,17 @@ import os
 def plot_spectrogram(data, sample_rate=16000, filename="spectrogram.png"):
     print("Generating spectrograms...")
 
-    # Create a tall stack of plots for however many clips we generated
     fig, axes = plt.subplots(len(data), 1, figsize=(10, 2.5 * len(data)))
-
-    # Handle the math if we only generate 1 clip
     if len(data) == 1: axes = [axes]
-
     for i, waveform in enumerate(data):
         # matplotlib's specgram does all the heavy Fourier math for us!
         axes[i].specgram(waveform, Fs=sample_rate, cmap='magma')
         axes[i].set_ylabel('Frequency (Hz)')
         axes[i].set_title(f'Trajectory {i+1} Spectrogram')
-
     plt.xlabel('Time (seconds)')
     plt.tight_layout()
     plt.savefig(filename)
     plt.close()
-
     print(f"📊 Saved {filename} to disk!")
 
 def save_audio(data, sample_rate=16000, prefix="generated_sound"):
@@ -59,6 +53,7 @@ def main():
     parser.add_argument("--mode", choices=["train", "sample"], required=True, help="Train the model or generate samples")
     parser.add_argument("--dataset", choices=["ou", "audioset"], default="ou", help="Which dataset to use")
     parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
+    parser.add_argument("--target", type=str, default=None, help="Target specific AudioSet labels (e.g., 'speech', 'drum')")
     parser.add_argument("--schedule", choices=["standard", "elliptical"], default="standard", required=False, help = "standard or elliptical")
     parser.add_argument("--batch_size", type=int, default=64, help="Training batch size")
     parser.add_argument("--samples", type=int, default=5, help="Number of trajectories to generate")
@@ -73,7 +68,7 @@ def main():
     model = UNet1D().to(device)
     weights_path = f"unet_{args.schedule}_weights.pt"
     if args.mode == "train":
-        dataloader = get_dataloader(dataset_name=args.dataset, batch_size=args.batch_size)
+        dataloader = get_dataloader(dataset_name=args.dataset, batch_size=args.batch_size, target_class=args.target)
         train_model(model, schedule, dataloader, args.epochs, device, save_path=weights_path)
     elif args.mode == "sample":
         if not os.path.exists(weights_path):
